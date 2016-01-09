@@ -1,6 +1,6 @@
 # tensorflow-clj
 
-FIXME: description
+Clojure API for using Google's Tensorflow
 
 ## Installation
 
@@ -30,7 +30,7 @@ FIXME: listing of options this app accepts.
 
 ## License
 
-Copyright © 2016 FIXME
+Copyright © 2016 Stephen M. Hopper
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
