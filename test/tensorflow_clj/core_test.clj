@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [tensorflow-clj.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest scalar-tensor
+  (testing "Scalar tensor creation"
+    (let [t (org.tensorflow.Tensor/create 123.0)]
+      (is (= org.tensorflow.DataType/DOUBLE (.dataType t))))))
