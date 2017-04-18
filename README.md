@@ -1,32 +1,14 @@
 # tensorflow-clj
 
-Clojure API for using Google's Tensorflow
-
-## Installation
-
-Download from http://example.com/FIXME.
+Clojure API for using Google's TensorFlow.
 
 ## Usage
 
-FIXME: explanation
+Tested on macOS. Should run out-of-the-box using Leiningen.
 
-    $ java -jar tensorflow-clj-0.1.0-standalone.jar [args]
+Run some basic tests:
 
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+    $ lein test
 
 ## License
 
