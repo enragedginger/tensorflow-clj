@@ -28,6 +28,12 @@
     {"dtype" org.tensorflow.DataType/DOUBLE
      "shape" (org.tensorflow.Shape/scalar)}))
 
+(defn run-and-fetch [name]
+  (with-open [sess (org.tensorflow.Session. graph)]
+    (-> sess (.runner)
+      (.fetch (name name))
+      (.run))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]

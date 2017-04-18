@@ -25,3 +25,9 @@
   (testing "Graph constant"
     (with-graph
       (constant :k 123.0))))
+
+(deftest session
+  (testing "Session"
+    (with-graph
+      (constant :k 123.0)
+      (print (run-and-fetch :k)))))
