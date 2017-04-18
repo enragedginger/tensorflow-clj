@@ -24,3 +24,12 @@
                 (.setAttr "shape" (org.tensorflow.Shape/scalar))
                 (.build))]
         x))))
+
+(deftest graph-constant
+  (testing "Graph constant"
+    (let [g (org.tensorflow.Graph.)
+          t (org.tensorflow.Tensor/create 123.0)]
+      (-> (.opBuilder g "Const" "k")
+        (.setAttr "dtype" (.dataType t))
+        (.setAttr "value" t)
+        (.build)))))
