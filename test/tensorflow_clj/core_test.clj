@@ -3,6 +3,7 @@
             [tensorflow-clj.core :refer :all]))
 
 (deftest scalar-tensor
-  (testing "Scalar tensor creation"
+  (testing "Scalar tensor"
     (let [t (org.tensorflow.Tensor/create 123.0)]
-      (is (= org.tensorflow.DataType/DOUBLE (.dataType t))))))
+      (is (= org.tensorflow.DataType/DOUBLE (.dataType t)))
+      (is (= [] (vec (.shape t)))))))
