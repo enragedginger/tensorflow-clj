@@ -15,3 +15,12 @@
       (is (= org.tensorflow.DataType/DOUBLE (.dataType t)))
       (is (= 1 (.numDimensions t)))
       (is (= [3] (vec (.shape t)))))))
+
+(deftest graph-variable
+  (testing "Graph variable"
+    (let [g (org.tensorflow.Graph.)]
+      (let [x (-> (.opBuilder g "Variable" "x")
+                (.setAttr "dtype" org.tensorflow.DataType/DOUBLE)
+                (.setAttr "shape" (org.tensorflow.Shape/scalar))
+                (.build))]
+        x))))
