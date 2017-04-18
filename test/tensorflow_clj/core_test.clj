@@ -18,18 +18,10 @@
 
 (deftest graph-variable
   (testing "Graph variable"
-    (let [g (org.tensorflow.Graph.)]
-      (let [x (-> (.opBuilder g "Variable" "x")
-                (.setAttr "dtype" org.tensorflow.DataType/DOUBLE)
-                (.setAttr "shape" (org.tensorflow.Shape/scalar))
-                (.build))]
-        x))))
+    (with-graph
+      (variable :x))))
 
 (deftest graph-constant
   (testing "Graph constant"
-    (let [g (org.tensorflow.Graph.)
-          t (org.tensorflow.Tensor/create 123.0)]
-      (-> (.opBuilder g "Const" "k")
-        (.setAttr "dtype" (.dataType t))
-        (.setAttr "value" t)
-        (.build)))))
+    (with-graph
+      (constant :k 123.0))))
