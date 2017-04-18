@@ -30,9 +30,13 @@
 
 (defn run-and-fetch [name]
   (with-open [sess (org.tensorflow.Session. graph)]
-    (-> sess (.runner)
-      (.fetch (name name))
-      (.run))))
+    (let [runner (.runner sess)]
+      (print (-> runner
+               (.feed (name name) (tensor 234.0))
+               (.fetch (name name))
+               (.run)
+               (.get 0)
+               (.toString))))))
 
 (defn -main
   "I don't do a whole lot ... yet."
