@@ -18,3 +18,6 @@ def gen(name):
 
 with gen("constant"):
     tf.constant(123.0)
+
+with gen("addconst"):
+    tf.constant(3.0) * tf.placeholder(tf.float32)
