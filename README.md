@@ -1,5 +1,7 @@
 # tensorflow-clj
 
+[![Build Status](https://travis-ci.org/enragedginger/tensorflow-clj.svg?branch=master)](https://travis-ci.org/enragedginger/tensorflow-clj)
+
 Clojure API for using Google's TensorFlow.
 
 ## Usage
