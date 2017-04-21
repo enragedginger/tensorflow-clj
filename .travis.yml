@@ -14,6 +14,4 @@ install:
       pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.1.0-cp34-cp34m-linux_x86_64.whl;
     fi
 jdk:
-- openjdk7
-- oraclejdk7
 - oraclejdk8
