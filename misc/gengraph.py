@@ -1,16 +1,20 @@
 #! /usr/bin/env python3
 
 import os
+from contextlib import contextmanager
 
 import tensorflow as tf
 
 
-def wr(g, name):
+@contextmanager
+def gen(name):
     name = os.path.join(os.path.dirname(__file__), "{}.pb".format(name))
-    open(name, "wb").write(g.as_graph_def().SerializeToString())
+    with open(name, "wb") as out:
+        g = tf.Graph()
+        with g.as_default():
+            yield
+        out.write(g.as_graph_def().SerializeToString())
 
 
-g = tf.Graph()
-with g.as_default():
-    c = tf.constant(123.0)
-wr(g, "constant")
+with gen("constant"):
+    tf.constant(123.0)
