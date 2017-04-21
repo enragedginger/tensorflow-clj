@@ -38,21 +38,21 @@
     {"dtype" org.tensorflow.DataType/DOUBLE
      "shape" (org.tensorflow.Shape/scalar)}))
 
-(defn run-and-fetch [name]
+(defn run-and-fetch [op-name]
   (with-open [sess (org.tensorflow.Session. graph)]
     (let [runner (.runner sess)]
       (print (-> runner
-               (.fetch (name name))
+               (.fetch (name op-name))
                (.run)
                (.get 0)
                (.toString))))))
 
-(defn run-feed-and-fetch [name]
+(defn run-feed-and-fetch [op-name]
   (with-open [sess (org.tensorflow.Session. graph)]
     (let [runner (.runner sess)]
       (print (-> runner
-               (.feed (name name) (tensor 234.0))
-               (.fetch (name name))
+               (.feed (name op-name) (tensor 234.0))
+               (.fetch (name op-name))
                (.run)
                (.get 0)
                (.toString))))))
