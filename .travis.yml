@@ -1,7 +1,17 @@
 language: clojure
-install: "pip install tensorflow"
+python: # Only two versions for now
+  - "2.7"
+  - "3.4"
+# command to install dependencies
+install:
+  - pip install numpy
+  # install TensorFlow from https://storage.googleapis.com/tensorflow/
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp27-none-linux_x86_64.whl;
+    elif [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
+      pip install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.0a0-cp34-cp34m-linux_x86_64.whl;
+    fi
 jdk:
 - openjdk7
-- openjdk8
 - oraclejdk7
 - oraclejdk8
