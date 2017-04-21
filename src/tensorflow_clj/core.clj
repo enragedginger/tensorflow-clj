@@ -3,12 +3,22 @@
 
 (def ^:dynamic graph nil)
 
+(defn slurp-binary [filename]
+  (-> (java.nio.file.FileSystems/getDefault)
+    (.getPath "" (into-array String [filename]))
+    (java.nio.file.Files/readAllBytes)))
+
 (defmacro with-graph [& body]
   `(binding [graph (org.tensorflow.Graph.)]
      (try
        ~@body
        (finally
          (.close graph)))))
+
+(defmacro with-graph-file [filename & body]
+  `(with-graph
+     (.importGraphDef graph (slurp-binary ~filename))
+     ~@body))
 
 (defn- build-op [op-type op-name attr-map]
   (let [ob (.opBuilder graph op-type (name op-name))]
@@ -27,6 +37,15 @@
   (build-op "Variable" name
     {"dtype" org.tensorflow.DataType/DOUBLE
      "shape" (org.tensorflow.Shape/scalar)}))
+
+(defn run-and-fetch [name]
+  (with-open [sess (org.tensorflow.Session. graph)]
+    (let [runner (.runner sess)]
+      (print (-> runner
+               (.fetch (name name))
+               (.run)
+               (.get 0)
+               (.toString))))))
 
 (defn run-feed-and-fetch [name]
   (with-open [sess (org.tensorflow.Session. graph)]
