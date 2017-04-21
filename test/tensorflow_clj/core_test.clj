@@ -39,3 +39,11 @@
         (is (= org.tensorflow.Tensor (type t)))
         (is (= [] (vec (.shape t))))
         (is (= 123.0 (.floatValue t)))))))
+
+(deftest protobuf-feed
+  (testing "Variable feed to loaded graph"
+    (with-graph-file "misc/addconst.pb"
+      (let [t (run-graph {:Placeholder (tensor (float 123.0))} :mul)]
+        (is (= org.tensorflow.Tensor (type t)))
+        (is (= [] (vec (.shape t))))
+        (is (= 369.0 (.floatValue t)))))))
