@@ -35,7 +35,7 @@
 (deftest protobuf-session
   (testing "Session from Protocol Buffers file"
     (with-graph-file "misc/constant.pb"
-      (let [t (run-and-fetch :Const)]
+      (let [t (run-graph {} :Const)]
         (is (= org.tensorflow.Tensor (type t)))
         (is (= [] (vec (.shape t))))
         (is (= 123.0 (.floatValue t)))))))

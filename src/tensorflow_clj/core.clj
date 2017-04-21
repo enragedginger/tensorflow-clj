@@ -38,20 +38,16 @@
     {"dtype" org.tensorflow.DataType/DOUBLE
      "shape" (org.tensorflow.Shape/scalar)}))
 
-(defn run-and-fetch [op-name]
+(defn run-graph [feed-ops fetch-op]
   (with-open [sess (org.tensorflow.Session. graph)]
-    (-> (.runner sess)
-      (.fetch (name op-name))
-      (.run)
-      (.get 0))))
-
-(defn run-feed-and-fetch [op-name]
-  (with-open [sess (org.tensorflow.Session. graph)]
-    (-> (.runner sess)
-      (.feed (name op-name) (tensor 234.0))
-      (.fetch (name op-name))
-      (.run)
-      (.get 0))))
+    (let [runner (.runner sess)]
+      (doseq [[feed-op feed-tensor] feed-ops]
+        (assert (instance? org.tensorflow.Tensor feed-tensor))
+        (.feed runner (name feed-op) feed-tensor))
+      (-> runner
+        (.fetch (name fetch-op))
+        (.run)
+        (.get 0)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
