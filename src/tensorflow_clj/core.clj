@@ -28,7 +28,7 @@
     {"dtype" org.tensorflow.DataType/DOUBLE
      "shape" (org.tensorflow.Shape/scalar)}))
 
-(defn run-and-fetch [name]
+(defn run-feed-and-fetch [name]
   (with-open [sess (org.tensorflow.Session. graph)]
     (let [runner (.runner sess)]
       (print (-> runner

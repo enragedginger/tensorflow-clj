@@ -30,4 +30,4 @@
   (testing "Session"
     (with-graph
       (constant :k 123.0)
-      (print (run-and-fetch :k)))))
+      (print (run-feed-and-fetch :k)))))
