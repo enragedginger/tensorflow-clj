@@ -1,5 +1,5 @@
 language: clojure
-
+install: "pip install tensorflow"
 jdk:
 - openjdk7
 - openjdk8
