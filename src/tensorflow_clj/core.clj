@@ -40,22 +40,18 @@
 
 (defn run-and-fetch [op-name]
   (with-open [sess (org.tensorflow.Session. graph)]
-    (let [runner (.runner sess)]
-      (print (-> runner
-               (.fetch (name op-name))
-               (.run)
-               (.get 0)
-               (.toString))))))
+    (-> (.runner sess)
+      (.fetch (name op-name))
+      (.run)
+      (.get 0))))
 
 (defn run-feed-and-fetch [op-name]
   (with-open [sess (org.tensorflow.Session. graph)]
-    (let [runner (.runner sess)]
-      (print (-> runner
-               (.feed (name op-name) (tensor 234.0))
-               (.fetch (name op-name))
-               (.run)
-               (.get 0)
-               (.toString))))))
+    (-> (.runner sess)
+      (.feed (name op-name) (tensor 234.0))
+      (.fetch (name op-name))
+      (.run)
+      (.get 0))))
 
 (defn -main
   "I don't do a whole lot ... yet."

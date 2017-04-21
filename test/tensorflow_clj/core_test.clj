@@ -30,9 +30,9 @@
 ;;   (testing "Session"
 ;;     (with-graph
 ;;       (constant :k 123.0)
-;;       (print (run-feed-and-fetch :k)))))
+;;       (run-feed-and-fetch :k))))
 
 (deftest protobuf-session
   (testing "Session from Protocol Buffers file"
     (with-graph-file "misc/constant.pb"
-      (print (run-and-fetch :Const)))))
+      (run-and-fetch :Const))))
