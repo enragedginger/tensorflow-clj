@@ -4,6 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
+                 [net.mikera/core.matrix "0.58.0"]
                  [org.tensorflow/tensorflow "1.1.0-rc2"]]
   :main ^:skip-aot tensorflow-clj.core
   :target-path "target/%s"
