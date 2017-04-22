@@ -67,3 +67,11 @@
     (with-graph-file "misc/addconst.pb"
       (let [[v] (run-graph {:Placeholder [[1 2] [3 4]]} :mul)]
         (is (= v [[3.0 6.0] [9.0 12.0]]))))))
+
+(deftest mulbymat-graph
+  (testing "Multiplying variable by constant matrix"
+    (with-graph-file "misc/mulbymat.pb"
+      (let [[v] (run-graph {:Placeholder 5} :mul)]
+        (is (= v [[5. 10.] [15. 20.]])))
+      (let [[v] (run-graph {:Placeholder [[1. -1.] [2. -2.]]} :mul)]
+        (is (= v [[1. -2.] [6. -8.]]))))))
