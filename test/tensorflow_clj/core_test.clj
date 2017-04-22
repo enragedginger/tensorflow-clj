@@ -75,3 +75,9 @@
         (is (= v [[5. 10.] [15. 20.]])))
       (let [[v] (run-graph {:Placeholder [[1. -1.] [2. -2.]]} :mul)]
         (is (= v [[1. -2.] [6. -8.]]))))))
+
+(deftest mul2vars-graph
+  (testing "Multiplying two variables"
+    (with-graph-file "misc/mul2vars.pb"
+      (let [[v] (run-graph {:a 4. :b 10.5} :mul)]
+        (is (= v 42.0))))))
