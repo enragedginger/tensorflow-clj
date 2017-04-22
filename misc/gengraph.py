@@ -40,6 +40,9 @@ with gen("linreg"):
     squared_deltas = tf.square(linear_model - y, name="squared_deltas")
     loss = tf.reduce_sum(squared_deltas, name="loss")
 
+    optimizer = tf.train.GradientDescentOptimizer(0.01)
+    train = optimizer.minimize(loss, name="train")
+
     fixW = tf.assign(W, [-1.], name="fixW")
     fixb = tf.assign(b, [1.], name="fixb")
 
