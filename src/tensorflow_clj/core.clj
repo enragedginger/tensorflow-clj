@@ -3,6 +3,7 @@
   (:gen-class))
 
 (def ^:dynamic graph nil)
+(def ^:dynamic session nil)
 
 (defn slurp-binary [filename]
   (-> (java.nio.file.FileSystems/getDefault)
@@ -18,8 +19,12 @@
 
 (defmacro with-graph-file [filename & body]
   `(with-graph
-     (.importGraphDef graph (slurp-binary ~filename))
-     ~@body))
+     (binding [session (org.tensorflow.Session. graph)]
+       (try
+         (.importGraphDef graph (slurp-binary ~filename))
+         ~@body
+         (finally
+           (.close session))))))
 
 (defn- build-op [op-type op-name attr-map]
   (let [ob (.opBuilder graph op-type (name op-name))]
@@ -56,13 +61,13 @@
      "shape" (org.tensorflow.Shape/scalar)}))
 
 (defn run-graph [feed-ops & fetch-ops]
-  (with-open [sess (org.tensorflow.Session. graph)]
-    (let [runner (.runner sess)]
-      (doseq [[feed-op feed-value] feed-ops]
-        (.feed runner (name feed-op) (tensor feed-value)))
-      (doseq [fetch-op fetch-ops]
-        (.fetch runner (name fetch-op)))
-      (vec (map tensor->clj (.run runner))))))
+  (assert session)
+  (let [runner (.runner session)]
+    (doseq [[feed-op feed-value] feed-ops]
+      (.feed runner (name feed-op) (tensor feed-value)))
+    (doseq [fetch-op fetch-ops]
+      (.fetch runner (name fetch-op)))
+    (vec (map tensor->clj (.run runner)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
