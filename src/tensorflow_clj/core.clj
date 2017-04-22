@@ -64,7 +64,9 @@
   (assert session)
   (let [runner (.runner session)]
     (doseq [[feed-op feed-value] feed-ops]
-      (.feed runner (name feed-op) (tensor feed-value)))
+      (if feed-value
+        (.feed runner (name feed-op) (tensor feed-value))
+        (.addTarget runner (name feed-op))))
     (doseq [fetch-op fetch-ops]
       (.fetch runner (name fetch-op)))
     (vec (map tensor->clj (.run runner)))))
