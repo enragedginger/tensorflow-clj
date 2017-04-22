@@ -1,4 +1,5 @@
 (ns tensorflow-clj.core
+  (:require [clojure.core.matrix :as matrix])
   (:gen-class))
 
 (def ^:dynamic graph nil)
@@ -27,7 +28,13 @@
     (-> ob (.build) (.output 0))))
 
 (defn tensor [value]
-  (org.tensorflow.Tensor/create value))
+  (let [shp (matrix/shape value)]
+    (if-not shp
+      (org.tensorflow.Tensor/create (float value))
+      (org.tensorflow.Tensor/create
+        (long-array shp)
+        (java.nio.FloatBuffer/wrap
+          (float-array (matrix/to-vector value)))))))
 
 (defn constant [name value]
   (let [t (tensor value)]
@@ -35,27 +42,19 @@
 
 (defn variable [name]
   (build-op "Variable" name
-    {"dtype" org.tensorflow.DataType/DOUBLE
+    {"dtype" org.tensorflow.DataType/FLOAT
      "shape" (org.tensorflow.Shape/scalar)}))
 
-(defn run-and-fetch [name]
+(defn run-graph [feed-ops fetch-op]
   (with-open [sess (org.tensorflow.Session. graph)]
     (let [runner (.runner sess)]
-      (print (-> runner
-               (.fetch (name name))
-               (.run)
-               (.get 0)
-               (.toString))))))
-
-(defn run-feed-and-fetch [name]
-  (with-open [sess (org.tensorflow.Session. graph)]
-    (let [runner (.runner sess)]
-      (print (-> runner
-               (.feed (name name) (tensor 234.0))
-               (.fetch (name name))
-               (.run)
-               (.get 0)
-               (.toString))))))
+      (doseq [[feed-op feed-tensor] feed-ops]
+        (assert (instance? org.tensorflow.Tensor feed-tensor))
+        (.feed runner (name feed-op) feed-tensor))
+      (-> runner
+        (.fetch (name fetch-op))
+        (.run)
+        (.get 0)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
