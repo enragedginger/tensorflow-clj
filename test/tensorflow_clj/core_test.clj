@@ -85,3 +85,13 @@
                             :b [[1. 2.] [3. 4.]]}
                   :mul)]
         (is (= v [[1. -2.] [6. -8.]]))))))
+
+(deftest linreg-graph
+  (testing "Linear regression"
+    (with-graph-file "misc/linreg.pb"
+      (let [[v] (run-graph {:x [1. 2. 3. 4.]
+                            :y [0. -1. -2. -3.]
+                            :W [-1.]
+                            :b [1.]}
+                  :loss)]
+        (is (= v 0.0))))))
