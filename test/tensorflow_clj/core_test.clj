@@ -55,3 +55,10 @@
         (is (= org.tensorflow.Tensor (type t)))
         (is (= [] (vec (.shape t))))
         (is (= 369.0 (.floatValue t)))))))
+
+(deftest matrix-feed
+  (testing "Matrix fed to loaded graph"
+    (with-graph-file "misc/addconst.pb"
+      (let [t (run-graph {:Placeholder (tensor [[1 2] [3 4]])} :mul)]
+        (is (= org.tensorflow.Tensor (type t)))
+        (is (= [2 2] (vec (.shape t))))))))
