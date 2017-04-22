@@ -82,10 +82,13 @@
 
 (deftest linreg-graph
   (testing "Linear regression"
-    (with-graph-file "misc/linreg.pb"
-      (let [[v] (run-graph {:x [1. 2. 3. 4.]
-                            :y [0. -1. -2. -3.]
-                            :W [-1.]
-                            :b [1.]}
-                  :loss)]
-        (is (= v 0.0))))))
+    (let [x-train [1. 2. 3. 4.]
+          y-train [0. -1. -2. -3.]]
+      (with-graph-file "misc/linreg.pb"
+        (let [[v] (run-graph {:x x-train :y y-train :W [-1.] :b [1.]}
+                    :loss)]
+          (is (= v 0.0))))
+      (with-graph-file "misc/linreg.pb"
+        (dotimes [i 1000]
+          (run-graph {:x x-train :y y-train :train nil :W [-1.] :b [1.]}
+            :loss))))))
