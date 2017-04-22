@@ -42,7 +42,7 @@
 
 (defn variable [name]
   (build-op "Variable" name
-    {"dtype" org.tensorflow.DataType/DOUBLE
+    {"dtype" org.tensorflow.DataType/FLOAT
      "shape" (org.tensorflow.Shape/scalar)}))
 
 (defn run-graph [feed-ops fetch-op]
