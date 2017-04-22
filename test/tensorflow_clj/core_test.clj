@@ -24,6 +24,16 @@
       (is (= 2 (.numDimensions t)))
       (is (= [2 3] (vec (.shape t)))))))
 
+(deftest tensor-conversion
+  (testing "Converting between tensors and core.matrix"
+    (letfn [(test [x] (is (= x (tensor->clj (tensor x)))))]
+      (test 123.0)
+      (test [1.0 2.0 3.0])
+      (test [[1.0 -2.0 3.0]
+             [4.0 5.0 -6.0]])
+      (test [[[123.0]]])
+      (test [[[[555.5]]]]))))
+
 (deftest graph-variable
   (testing "Graph variable"
     (with-graph
