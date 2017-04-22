@@ -24,3 +24,7 @@ with gen("addconst"):
 
 with gen("mulbymat"):
     tf.placeholder(tf.float32) * tf.constant([[1., 2.], [3., 4.]])
+
+with gen("mul2vars"):
+    tf.placeholder(tf.float32, name="a") * \
+        tf.placeholder(tf.float32, name="b")
