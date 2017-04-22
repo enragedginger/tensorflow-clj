@@ -45,16 +45,15 @@
     {"dtype" org.tensorflow.DataType/FLOAT
      "shape" (org.tensorflow.Shape/scalar)}))
 
-(defn run-graph [feed-ops fetch-op]
+(defn run-graph [feed-ops & fetch-ops]
   (with-open [sess (org.tensorflow.Session. graph)]
     (let [runner (.runner sess)]
       (doseq [[feed-op feed-tensor] feed-ops]
         (assert (instance? org.tensorflow.Tensor feed-tensor))
         (.feed runner (name feed-op) feed-tensor))
-      (-> runner
-        (.fetch (name fetch-op))
-        (.run)
-        (.get 0)))))
+      (doseq [fetch-op fetch-ops]
+        (.fetch runner (name fetch-op)))
+      (vec (.run runner)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
