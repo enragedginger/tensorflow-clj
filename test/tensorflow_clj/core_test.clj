@@ -4,17 +4,25 @@
 
 (deftest scalar-tensor
   (testing "Scalar tensor"
-    (let [t (org.tensorflow.Tensor/create 123.0)]
-      (is (= org.tensorflow.DataType/DOUBLE (.dataType t)))
+    (let [t (tensor 123.0)]
+      (is (= org.tensorflow.DataType/FLOAT (.dataType t)))
       (is (= 0 (.numDimensions t)))
       (is (= [] (vec (.shape t)))))))
 
 (deftest vector-tensor
   (testing "Vector tensor"
-    (let [t (org.tensorflow.Tensor/create (into-array [1.0 2.0 3.0]))]
-      (is (= org.tensorflow.DataType/DOUBLE (.dataType t)))
+    (let [t (tensor [1.0 2.0 3.0])]
+      (is (= org.tensorflow.DataType/FLOAT (.dataType t)))
       (is (= 1 (.numDimensions t)))
       (is (= [3] (vec (.shape t)))))))
+
+(deftest matrix-tensor
+  (testing "Matrix tensor"
+    (let [t (tensor [[1.0 2.0 3.0]
+                     [4.0 5.0 6.0]])]
+      (is (= org.tensorflow.DataType/FLOAT (.dataType t)))
+      (is (= 2 (.numDimensions t)))
+      (is (= [2 3] (vec (.shape t)))))))
 
 (deftest graph-variable
   (testing "Graph variable"

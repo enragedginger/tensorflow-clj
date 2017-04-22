@@ -1,4 +1,5 @@
 (ns tensorflow-clj.core
+  (:require [clojure.core.matrix :as matrix])
   (:gen-class))
 
 (def ^:dynamic graph nil)
@@ -27,7 +28,13 @@
     (-> ob (.build) (.output 0))))
 
 (defn tensor [value]
-  (org.tensorflow.Tensor/create value))
+  (let [shp (matrix/shape value)]
+    (if-not shp
+      (org.tensorflow.Tensor/create (float value))
+      (org.tensorflow.Tensor/create
+        (long-array shp)
+        (java.nio.FloatBuffer/wrap
+          (float-array (matrix/to-vector value)))))))
 
 (defn constant [name value]
   (let [t (tensor value)]
