@@ -80,4 +80,8 @@
   (testing "Multiplying two variables"
     (with-graph-file "misc/mul2vars.pb"
       (let [[v] (run-graph {:a 4. :b 10.5} :mul)]
-        (is (= v 42.0))))))
+        (is (= v 42.0)))
+      (let [[v] (run-graph {:a [[1. -1.] [2. -2.]]
+                            :b [[1. 2.] [3. 4.]]}
+                  :mul)]
+        (is (= v [[1. -2.] [6. -8.]]))))))
