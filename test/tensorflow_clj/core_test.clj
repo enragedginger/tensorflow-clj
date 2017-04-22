@@ -53,22 +53,17 @@
 (deftest protobuf-session
   (testing "Session from Protocol Buffers file"
     (with-graph-file "misc/constant.pb"
-      (let [[t] (run-graph {} :Const)]
-        (is (= org.tensorflow.Tensor (type t)))
-        (is (= [] (vec (.shape t))))
-        (is (= 123.0 (.floatValue t)))))))
+      (let [[v] (run-graph {} :Const)]
+        (is (= 123.0 v))))))
 
 (deftest protobuf-feed
   (testing "Variable feed to loaded graph"
     (with-graph-file "misc/addconst.pb"
-      (let [[t] (run-graph {:Placeholder (tensor (float 123.0))} :mul)]
-        (is (= org.tensorflow.Tensor (type t)))
-        (is (= [] (vec (.shape t))))
-        (is (= 369.0 (.floatValue t)))))))
+      (let [[v] (run-graph {:Placeholder (float 123.0)} :mul)]
+        (is (= 369.0 v))))))
 
 (deftest matrix-feed
   (testing "Matrix fed to loaded graph"
     (with-graph-file "misc/addconst.pb"
-      (let [[t] (run-graph {:Placeholder (tensor [[1 2] [3 4]])} :mul)]
-        (is (= org.tensorflow.Tensor (type t)))
-        (is (= [2 2] (vec (.shape t))))))))
+      (let [[v] (run-graph {:Placeholder [[1 2] [3 4]]} :mul)]
+        (is (= v [[3.0 6.0] [9.0 12.0]]))))))

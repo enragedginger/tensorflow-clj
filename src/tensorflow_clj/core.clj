@@ -58,12 +58,11 @@
 (defn run-graph [feed-ops & fetch-ops]
   (with-open [sess (org.tensorflow.Session. graph)]
     (let [runner (.runner sess)]
-      (doseq [[feed-op feed-tensor] feed-ops]
-        (assert (instance? org.tensorflow.Tensor feed-tensor))
-        (.feed runner (name feed-op) feed-tensor))
+      (doseq [[feed-op feed-value] feed-ops]
+        (.feed runner (name feed-op) (tensor feed-value)))
       (doseq [fetch-op fetch-ops]
         (.fetch runner (name fetch-op)))
-      (vec (.run runner)))))
+      (vec (map tensor->clj (.run runner))))))
 
 (defn -main
   "I don't do a whole lot ... yet."
