@@ -80,6 +80,13 @@
                   :mul)]
         (is (= v [[1. -2.] [6. -8.]]))))))
 
+(defn round2
+  "Round a double to the given precision (number of significant digits).
+  Stolen from http://stackoverflow.com/questions/10751638/clojure-rounding-to-decimal-places"
+  [precision d]
+  (let [factor (Math/pow 10 precision)]
+    (/ (Math/round (* d factor)) factor)))
+
 (deftest linreg-graph
   (testing "Linear regression"
     (let [x-train [1. 2. 3. 4.]
@@ -87,8 +94,13 @@
       (with-graph-file "misc/linreg.pb"
         (let [[v] (run-graph {:x x-train :y y-train :W [-1.] :b [1.]}
                     :loss)]
-          (is (= v 0.0))))
-      (with-graph-file "misc/linreg.pb"
-        (dotimes [i 1000]
-          (run-graph {:x x-train :y y-train :train nil :W [-1.] :b [1.]}
-            :loss))))))
+          (is (= v 0.0)))))
+    (let [W -1.
+          b 1.
+          x-train (into [] (map (fn [i] (* 1000 (Math/random))) (range 1000)))
+          y-train (map #(+ (* W %) b) x-train)]
+      (with-graph-file
+        "misc/linreg.pb"
+        (let [[v] (run-graph {:x x-train :y y-train :W [W] :b [b]}
+                             :loss)]
+          (is (zero? (round2 5 v))))))))
