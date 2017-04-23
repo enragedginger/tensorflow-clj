@@ -3,6 +3,7 @@
   (:gen-class))
 
 (def ^:dynamic graph nil)
+(def ^:dynamic session nil)
 
 (defn slurp-binary [filename]
   (-> (java.nio.file.FileSystems/getDefault)
@@ -18,8 +19,12 @@
 
 (defmacro with-graph-file [filename & body]
   `(with-graph
-     (.importGraphDef graph (slurp-binary ~filename))
-     ~@body))
+     (binding [session (org.tensorflow.Session. graph)]
+       (try
+         (.importGraphDef graph (slurp-binary ~filename))
+         ~@body
+         (finally
+           (.close session))))))
 
 (defn- build-op [op-type op-name attr-map]
   (let [ob (.opBuilder graph op-type (name op-name))]
@@ -36,6 +41,16 @@
         (java.nio.FloatBuffer/wrap
           (float-array (matrix/to-vector value)))))))
 
+(defn tensor->clj [t]
+  (assert (instance? org.tensorflow.Tensor t))
+  (let [shp (vec (.shape t))]
+    (if (empty? shp)
+      (.floatValue t)
+      (let [buf (java.nio.FloatBuffer/allocate (.numElements t))]
+        (.writeTo t buf)
+        (matrix/reshape (vec (.array buf))
+          shp)))))
+
 (defn constant [name value]
   (let [t (tensor value)]
     (build-op "Const" name {"dtype" (.dataType t) "value" t})))
@@ -45,16 +60,16 @@
     {"dtype" org.tensorflow.DataType/FLOAT
      "shape" (org.tensorflow.Shape/scalar)}))
 
-(defn run-graph [feed-ops fetch-op]
-  (with-open [sess (org.tensorflow.Session. graph)]
-    (let [runner (.runner sess)]
-      (doseq [[feed-op feed-tensor] feed-ops]
-        (assert (instance? org.tensorflow.Tensor feed-tensor))
-        (.feed runner (name feed-op) feed-tensor))
-      (-> runner
-        (.fetch (name fetch-op))
-        (.run)
-        (.get 0)))))
+(defn run-graph [feed-ops & fetch-ops]
+  (assert session)
+  (let [runner (.runner session)]
+    (doseq [[feed-op feed-value] feed-ops]
+      (if feed-value
+        (.feed runner (name feed-op) (tensor feed-value))
+        (.addTarget runner (name feed-op))))
+    (doseq [fetch-op fetch-ops]
+      (.fetch runner (name fetch-op)))
+    (vec (map tensor->clj (.run runner)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
