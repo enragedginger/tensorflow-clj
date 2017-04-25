@@ -6,32 +6,20 @@
 (def ^:dynamic graph nil)
 (def ^:dynamic session nil)
 
-(defn create-graph []
-  (org.tensorflow.Graph.))
-
-(defn close-graph [graph]
-  (.close graph))
-
 (defmacro with-graph [& body]
-  `(binding [graph (create-graph)]
+  `(binding [graph (org.tensorflow.Graph.)]
      (try
        ~@body
        (finally
-         (close-graph graph)))))
-
-(defn create-session [graph]
-  (org.tensorflow.Session. graph))
-
-(defn close-session [session]
-  (.close session))
+         (.close graph)))))
 
 (defmacro with-graph-and-session [& body]
   `(with-graph
-     (binding [session (create-session graph)]
+     (binding [session (org.tensorflow.Session. graph)]
        (try
          ~@body
          (finally
-           (close-session session))))))
+           (.close session))))))
 
 (defmacro with-graph-file [filename & body]
   `(with-graph-and-session
