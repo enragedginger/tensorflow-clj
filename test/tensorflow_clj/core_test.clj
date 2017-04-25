@@ -37,12 +37,12 @@
 
 (deftest graph-variable
   (testing "Graph variable"
-    (with-graph
+    (with-graph-and-session
       (variable :x))))
 
 (deftest graph-constant
   (testing "Graph constant"
-    (with-graph
+    (with-graph-and-session
       (constant :k 123.0))))
 
 (deftest protobuf-session

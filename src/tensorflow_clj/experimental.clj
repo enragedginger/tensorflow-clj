@@ -3,21 +3,14 @@
             [tensorflow-clj.core :as core]
             [tensorflow-clj.util :as util]))
 
-(defn exec-graph-fn [graph-fn]
+(defn exec-graph-sess-fn [graph-sess-fn]
   (let [graph (org.tensorflow.Graph.)]
     (try
-      (graph-fn graph)
-      (finally
-        (.close graph)))))
-
-(defn exec-graph-sess-fn [graph-sess-fn]
-  (exec-graph-fn
-    (fn [graph]
       (let [session (org.tensorflow.Session. graph)]
         (try
           (graph-sess-fn graph session)
-          (finally
-            (.close session)))))))
+          (finally (.close session))))
+      (finally (.close graph)))))
 
 (defn load-graph! [graph filename]
   (.importGraphDef graph (util/slurp-binary filename)))
