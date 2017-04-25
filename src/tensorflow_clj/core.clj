@@ -1,30 +1,43 @@
 (ns tensorflow-clj.core
-  (:require [clojure.core.matrix :as matrix])
+  (:require [clojure.core.matrix :as matrix]
+            [tensorflow-clj.util :as util])
   (:gen-class))
 
 (def ^:dynamic graph nil)
 (def ^:dynamic session nil)
 
-(defn slurp-binary [filename]
-  (-> (java.nio.file.FileSystems/getDefault)
-    (.getPath "" (into-array String [filename]))
-    (java.nio.file.Files/readAllBytes)))
+(defn create-graph []
+  (org.tensorflow.Graph.))
+
+(defn close-graph [graph]
+  (.close graph))
 
 (defmacro with-graph [& body]
-  `(binding [graph (org.tensorflow.Graph.)]
+  `(binding [graph (create-graph)]
      (try
        ~@body
        (finally
-         (.close graph)))))
+         (close-graph graph)))))
 
-(defmacro with-graph-file [filename & body]
+(defn create-session [graph]
+  (org.tensorflow.Session. graph))
+
+(defn close-session [session]
+  (.close session))
+
+(defmacro with-graph-and-session [& body]
   `(with-graph
-     (binding [session (org.tensorflow.Session. graph)]
+     (binding [session (create-session graph)]
        (try
-         (.importGraphDef graph (slurp-binary ~filename))
          ~@body
          (finally
-           (.close session))))))
+           (close-session session))))))
+
+(defmacro with-graph-file [filename & body]
+  `(with-graph-and-session
+     (.importGraphDef graph (util/slurp-binary ~filename))
+     ~@body
+     ))
 
 (defn- build-op [op-type op-name attr-map]
   (let [ob (.opBuilder graph op-type (name op-name))]
@@ -70,8 +83,3 @@
     (doseq [fetch-op fetch-ops]
       (.fetch runner (name fetch-op)))
     (vec (map tensor->clj (.run runner)))))
-
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))

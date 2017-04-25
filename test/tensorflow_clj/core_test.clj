@@ -1,6 +1,7 @@
 (ns tensorflow-clj.core-test
   (:require [clojure.test :refer :all]
-            [tensorflow-clj.core :refer :all]))
+            [tensorflow-clj.core :refer :all]
+            [tensorflow-clj.util :refer :all]))
 
 (deftest scalar-tensor
   (testing "Scalar tensor"
@@ -79,13 +80,6 @@
                             :b [[1. 2.] [3. 4.]]}
                   :mul)]
         (is (= v [[1. -2.] [6. -8.]]))))))
-
-(defn round2
-  "Round a double to the given precision (number of significant digits).
-  Stolen from http://stackoverflow.com/questions/10751638/clojure-rounding-to-decimal-places"
-  [precision d]
-  (let [factor (Math/pow 10 precision)]
-    (/ (Math/round (* d factor)) factor)))
 
 (deftest linreg-graph
   (testing "Linear regression"
