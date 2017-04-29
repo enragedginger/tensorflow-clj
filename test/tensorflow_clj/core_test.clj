@@ -35,16 +35,6 @@
       (test [[[1., 2., 3.]], [[7., 8., 9.]]])
       (test [[[[555.5]]]]))))
 
-(deftest graph-variable
-  (testing "Graph variable"
-    (with-graph-and-session
-      (variable :x))))
-
-(deftest graph-constant
-  (testing "Graph constant"
-    (with-graph-and-session
-      (constant :k 123.0))))
-
 (deftest protobuf-session
   (testing "Session from Protocol Buffers file"
     (with-graph-file "misc/constant.pb"

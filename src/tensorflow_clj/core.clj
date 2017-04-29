@@ -21,12 +21,6 @@
      ~@body
      ))
 
-(defn- build-op [op-type op-name attr-map]
-  (let [ob (.opBuilder graph op-type (name op-name))]
-    (doseq [[attr-name attr-value] attr-map]
-      (.setAttr ob attr-name attr-value))
-    (-> ob (.build) (.output 0))))
-
 (defn tensor [value]
   (let [shp (matrix/shape value)]
     (if-not shp
@@ -45,15 +39,6 @@
         (.writeTo t buf)
         (matrix/reshape (vec (.array buf))
           shp)))))
-
-(defn constant [name value]
-  (let [t (tensor value)]
-    (build-op "Const" name {"dtype" (.dataType t) "value" t})))
-
-(defn variable [name]
-  (build-op "Variable" name
-    {"dtype" org.tensorflow.DataType/FLOAT
-     "shape" (org.tensorflow.Shape/scalar)}))
 
 (defn run-graph [feed-ops & fetch-ops]
   (assert session)
