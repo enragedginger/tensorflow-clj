@@ -46,5 +46,4 @@ with gen("linreg"):
     fixW = tf.assign(W, [-1.], name="fixW")
     fixb = tf.assign(b, [1.], name="fixb")
 
-    init = tf.global_variables_initializer()
-    #tf.identity(init, name="init")
+    init = tf.variables_initializer(tf.global_variables(), name="init")
