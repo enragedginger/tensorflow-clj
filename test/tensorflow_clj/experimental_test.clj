@@ -23,5 +23,4 @@
           (load-graph! graph "misc/linreg.pb")
           (let [[v] (run-graph-thing session {:x x-train :y y-train :W [W] :b [b]}
                                :loss)]
-            (is (zero? (round2 5 v)))))
-        ))))
+            (is (approx= 0.0 v))))))))
