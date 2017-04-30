@@ -104,6 +104,7 @@
       (run-graph {:init nil})
       (dotimes [i 1000]
         (run-graph {:x x-train :y y-train :train nil}))
-      (let [[[W] [b]] (run-graph {} :W :b)]
+      (let [[[W] [b] loss] (run-graph {:x x-train :y y-train} :W :b :loss)]
         (is (approx= -0.9999 W))
-        (is (approx= 0.99999 b))))))
+        (is (approx= 0.99999 b))
+        (is (approx= 5.6999738e-11 loss))))))
