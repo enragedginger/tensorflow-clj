@@ -1,7 +1,19 @@
 (ns tensorflow-clj.core-test
   (:require [clojure.test :refer :all]
             [tensorflow-clj.core :refer :all]
+            [tensorflow-clj.experimental :refer :all]
             [tensorflow-clj.util :refer :all]))
+
+(defmacro test-both-apis [graph-file & body]
+  `(do
+     (with-graph-file ~graph-file
+       (letfn [(~'run-graph [& args#] (apply run-graph args#))]
+         ~@body))
+     (exec-graph-sess-fn
+       (fn [graph# session#]
+         (load-graph! graph# ~graph-file)
+         (letfn [(~'run-graph [& args#] (apply run-graph-thing session# args#))]
+           ~@body)))))
 
 (deftest scalar-tensor
   (testing "Scalar tensor"
@@ -37,25 +49,25 @@
 
 (deftest protobuf-session
   (testing "Session from Protocol Buffers file"
-    (with-graph-file "misc/constant.pb"
+    (test-both-apis "misc/constant.pb"
       (let [[v] (run-graph {} :Const)]
         (is (= 123.0 v))))))
 
 (deftest protobuf-feed
   (testing "Variable feed to loaded graph"
-    (with-graph-file "misc/addconst.pb"
+    (test-both-apis "misc/addconst.pb"
       (let [[v] (run-graph {:Placeholder (float 123.0)} :mul)]
         (is (= 369.0 v))))))
 
 (deftest matrix-feed
   (testing "Matrix fed to loaded graph"
-    (with-graph-file "misc/addconst.pb"
+    (test-both-apis "misc/addconst.pb"
       (let [[v] (run-graph {:Placeholder [[1 2] [3 4]]} :mul)]
         (is (= v [[3.0 6.0] [9.0 12.0]]))))))
 
 (deftest mulbymat-graph
   (testing "Multiplying variable by constant matrix"
-    (with-graph-file "misc/mulbymat.pb"
+    (test-both-apis "misc/mulbymat.pb"
       (let [[v] (run-graph {:Placeholder 5} :mul)]
         (is (= v [[5. 10.] [15. 20.]])))
       (let [[v] (run-graph {:Placeholder [[1. -1.] [2. -2.]]} :mul)]
@@ -63,7 +75,7 @@
 
 (deftest mul2vars-graph
   (testing "Multiplying two variables"
-    (with-graph-file "misc/mul2vars.pb"
+    (test-both-apis "misc/mul2vars.pb"
       (let [[v] (run-graph {:a 4. :b 10.5} :mul)]
         (is (= v 42.0)))
       (let [[v] (run-graph {:a [[1. -1.] [2. -2.]]
@@ -76,7 +88,7 @@
 
 (deftest linreg-one-pass
   (testing "Linear regression (one pass)"
-    (with-graph-file "misc/linreg.pb"
+    (test-both-apis "misc/linreg.pb"
       (run-graph {:init nil})
       (let [[[a b c d]] (run-graph {:x x-train} :linear_model)]
         (is (approx= 0.0 a))
@@ -86,21 +98,21 @@
 
 (deftest linreg-one-loss
   (testing "Linear regression (one loss)"
-    (with-graph-file "misc/linreg.pb"
+    (test-both-apis "misc/linreg.pb"
       (run-graph {:init nil})
       (let [[loss] (run-graph {:x x-train :y y-train} :loss)]
         (is (approx= 23.66 loss))))))
 
 (deftest linreg-fixed-vars
   (testing "Linear regression (fixed variables)"
-    (with-graph-file "misc/linreg.pb"
+    (test-both-apis "misc/linreg.pb"
       (run-graph {:fixW nil :fixb nil})
       (let [[loss] (run-graph {:x x-train :y y-train} :loss)]
         (is (approx= 0.0 loss))))))
 
 (deftest linreg-graph-iterations
   (testing "Linear regression (1000 iterations)"
-    (with-graph-file "misc/linreg.pb"
+    (test-both-apis "misc/linreg.pb"
       (run-graph {:init nil})
       (dotimes [i 1000]
         (run-graph {:x x-train :y y-train :train nil}))
