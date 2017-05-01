@@ -1,5 +1,6 @@
 /target
 /classes
+/bin
 /checkouts
 pom.xml
 pom.xml.asc
@@ -14,4 +15,4 @@ pom.xml.asc
 /.classpath
 /.project
 .settings
-/bin/
+
