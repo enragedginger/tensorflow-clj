@@ -4,29 +4,15 @@
             [tensorflow-clj.util :as util]
             [random-string.core :as randy-str])
   (:import
-    (org.tensorflow.framework.*)
     (org.tensorflow.framework.GraphDef)))
 
 (def proto-graph-def (proto/protodef org.tensorflow.framework.GraphDef))
 (def graph-node (proto/protodef org.tensorflow.framework.NodeDef))
 
-(defn write-node [node]
-  (apply
-    (partial proto/protobuf graph-node)
-    (->> node
-         (into [])
-         (apply concat))))
-
-(def linreg-graph (proto/protobuf-load graph (util/slurp-binary "misc/linreg.pb")))
-(-> linreg-graph :node count)
-(map :name (-> linreg-graph :node))
-
-(def addconst-graph (proto/protobuf-load graph (util/slurp-binary "misc/addconst.pb")))
-(-> addconst-graph :node count)
-
-(defn gen-name [prefix]
-  ;(str prefix "_" (randy-str/string 16))
-  prefix)
+(defn gen-name [prefix preserve?]
+  (if preserve?
+    prefix
+    (str prefix "_" (randy-str/string 16))))
 
 (defn convert-op-key [op-key]
   (-> op-key
@@ -56,24 +42,13 @@
                      :op :mul
                      }
                :add1 {
-                      :op :add
+                      :op :mul
                       }
                :add2 {
                       :op :add
                       }
                }
    })
-
-
-{:node [{:name "Const",
-         :op "Const",
-         :attr [{:key "value", :value {:tensor {:dtype :dt-float, :tensor-shape {}, :float-val [3.0]}}}
-                {:key "dtype", :value {:type :dt-float}}]}
-        {:name "Placeholder",
-         :op "Placeholder",
-         :attr [{:key "dtype", :value {:type :dt-float}} {:key "shape", :value {:shape {}}}]}
-        {:name "mul", :op "Mul", :input ["Const" "Placeholder"], :attr [{:key "T", :value {:type :dt-float}}]}],
- :versions {:producer 21}}
 
 (defn build-node-def [node-name-map inputs-map key entry]
   (let [attr (case (-> entry :op)
@@ -93,10 +68,15 @@
   (let [keys (map second inputs)]
     (zipmap keys (map first inputs))))
 
-(defn build-tf-graph [graph-def]
-  (let [{:keys [inputs outputs mappings node-defs]} graph-def
+(defn build-node-name-map [node-keys inputs outputs]
+  (let [preservation-set (into #{} (concat inputs outputs))
+        node-names (map #(gen-name (name %) (contains? preservation-set %)) node-keys)]
+    (zipmap node-keys node-names)))
+
+(defn build-tf-graph [{:keys [inputs outputs mappings node-defs] :as graph-def}]
+  (let [
         node-keys (keys node-defs)
-        node-name-map (zipmap node-keys (map #(-> % name gen-name) node-keys))
+        node-name-map (build-node-name-map node-keys inputs outputs)
         inputs-map (build-inputs-map mappings)
         node-defs (map #(apply (partial build-node-def node-name-map inputs-map) %) node-defs)]
     {:node node-defs
@@ -104,30 +84,34 @@
 
 (build-tf-graph example-graph)
 
-(defn write-graph [graph]
-  (apply
-    (partial proto/protobuf proto-graph-def)
-    (->> graph
-         (into [])
-         (apply concat))))
+(defn graph-to-bytes [graph]
+  (let [proto-graph (apply
+                      (partial proto/protobuf proto-graph-def)
+                      (->> graph
+                           (into [])
+                           (apply concat)))]
+    (proto/protobuf-dump proto-graph)))
 
-(write-graph (build-tf-graph example-graph))
-(write-graph {:node [{:name "Const",
-                      :op "Const",
-                      :attr [{:key "value", :value {:tensor {:dtype "DT_FLOAT", :tensor-shape {}, :float-val [3.0]}}}
-                             {:key "dtype", :value {:type "DT_FLOAT"}}]}
-                     {:name "Placeholder",
-                      :op "Placeholder",
-                      :attr [{:key "dtype", :value {:type "DT_FLOAT"}} {:key "shape", :value {:shape {}}}]}
-                     {:name "mul", :op "Mul", :input ["Const" "Placeholder"], :attr [{:key "T", :value {:type "DT_FLOAT"}}]}],
-              :versions {:producer 21}})
+(def linreg-graph (proto/protobuf-load proto-graph-def (util/slurp-binary "misc/linreg.pb")))
+(-> linreg-graph :node count)
+(map :name (-> linreg-graph :node))
+
+(def addconst-graph (proto/protobuf-load proto-graph-def (util/slurp-binary "misc/addconst.pb")))
+(-> addconst-graph :node count)
+
+{:node [{:name "Const",
+         :op "Const",
+         :attr [{:key "value", :value {:tensor {:dtype :dt-float, :tensor-shape {}, :float-val [3.0]}}}
+                {:key "dtype", :value {:type :dt-float}}]}
+        {:name "Placeholder",
+         :op "Placeholder",
+         :attr [{:key "dtype", :value {:type :dt-float}} {:key "shape", :value {:shape {}}}]}
+        {:name "mul", :op "Mul", :input ["Const" "Placeholder"], :attr [{:key "T", :value {:type :dt-float}}]}],
+ :versions {:producer 21}}
 
 (exp/exec-graph-sess-fn
   (fn [graph session]
     ;(.importGraphDef graph (util/slurp-binary "misc/addconst.pb"))
     ;(.importGraphDef graph (proto/protobuf-dump addconst-graph))
-    (.importGraphDef graph (proto/protobuf-dump (write-graph (build-tf-graph example-graph))))
-    (exp/run-graph-thing session  {:in1 (float 3.0) :in2 (float 2.0)} :mul)))
-
-(use 'clojure.repl)
-(pst *e)
+    (.importGraphDef graph (graph-to-bytes (build-tf-graph example-graph)))
+    (exp/run-graph-thing session  {:in1 (float 3.0) :in2 (float 3.0)} :mul)))
