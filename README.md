@@ -4,9 +4,13 @@
 
 Clojure API for using Google's TensorFlow.
 
+We just got started. The API will change constantly.
+
+Development is coordinated on **#tensorflow** @ Clojurians Slack, [get an invite](http://clojurians.net/)
+
 ## Usage
 
-Tested on macOS. Should run out-of-the-box using Leiningen.
+Should run out-of-the-box using Leiningen. Developed locally on macOS and also built on Travis CI Linux.
 
 Run some basic tests:
 
