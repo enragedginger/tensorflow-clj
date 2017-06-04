@@ -8,7 +8,7 @@ import tensorflow as tf
 
 @contextmanager
 def gen(name):
-    name = os.path.join(os.path.dirname(__file__), "{}.pb".format(name))
+    name = os.path.join(os.getcwd(), "{}.pb".format(name))
     with open(name, "wb") as out:
         g = tf.Graph()
         with g.as_default():
@@ -47,3 +47,11 @@ with gen("linreg"):
     fixb = tf.assign(b, [1.], name="fixb")
 
     init = tf.variables_initializer(tf.global_variables(), name="init")
+
+with gen("nonsense"):
+    a = tf.constant(5.0)
+    b = tf.constant('omg we is in the cloud ?!?!?!oneoneone')
+    c = tf.constant(True)
+    d = tf.constant([[1.2, 2.], [3.4, 3.5]])
+    e = tf.constant(5)
+

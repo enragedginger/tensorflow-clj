@@ -1,11 +1,11 @@
 (ns tensorflow-clj.proto-much
   (:require [flatland.protobuf.core :as proto]
-            [tensorflow-clj.experimental :as exp]
             [tensorflow-clj.util :as util]
             [random-string.core :as randy-str])
   (:import
     (org.tensorflow.framework.GraphDef)))
 
+(def proto-meta-graph-def (proto/protodef org.tensorflow.framework.MetaGraphDef))
 (def proto-graph-def (proto/protodef org.tensorflow.framework.GraphDef))
 (def graph-node (proto/protodef org.tensorflow.framework.NodeDef))
 
@@ -19,36 +19,6 @@
       name
       clojure.string/lower-case
       clojure.string/capitalize))
-
-(def example-graph
-  {
-   :inputs [:in1 :in2]
-   :outputs [:mul]
-   :mappings [
-              [[:in1 :in2] :add1]
-              [[:in1 :in2] :add2]
-              [[:add1 :add2] :mul]
-              ]
-   :node-defs {
-               :in1 {
-                     :op :placeholder
-                     :dtype :float
-                     }
-               :in2 {
-                     :op :placeholder
-                     :dtype :float
-                     }
-               :mul {
-                     :op :mul
-                     }
-               :add1 {
-                      :op :mul
-                      }
-               :add2 {
-                      :op :add
-                      }
-               }
-   })
 
 (defn build-node-def [node-name-map inputs-map key entry]
   (let [attr (case (-> entry :op)
@@ -82,8 +52,6 @@
     {:node node-defs
      :versions {:producer 21}}))
 
-(build-tf-graph example-graph)
-
 (defn graph-to-bytes [graph]
   (let [proto-graph (apply
                       (partial proto/protobuf proto-graph-def)
@@ -92,26 +60,72 @@
                            (apply concat)))]
     (proto/protobuf-dump proto-graph)))
 
-(def linreg-graph (proto/protobuf-load proto-graph-def (util/slurp-binary "misc/linreg.pb")))
-(-> linreg-graph :node count)
-(map :name (-> linreg-graph :node))
+(defn byte-string-to-string [^com.google.protobuf.ByteString$LiteralByteString byte-string-literal]
+  ;(-> byte-string-literal .toByteArray String.)
+  (-> byte-string-literal .toStringUtf8)
+  )
 
-(def addconst-graph (proto/protobuf-load proto-graph-def (util/slurp-binary "misc/addconst.pb")))
-(-> addconst-graph :node count)
+(defn byte-string-to-string [^com.google.protobuf.ByteString$LiteralByteString byte-string-literal]
+  ;(-> byte-string-literal .toByteArray String.)
+  (-> byte-string-literal .toStringUtf8)
+  )
 
-{:node [{:name "Const",
-         :op "Const",
-         :attr [{:key "value", :value {:tensor {:dtype :dt-float, :tensor-shape {}, :float-val [3.0]}}}
-                {:key "dtype", :value {:type :dt-float}}]}
-        {:name "Placeholder",
-         :op "Placeholder",
-         :attr [{:key "dtype", :value {:type :dt-float}} {:key "shape", :value {:shape {}}}]}
-        {:name "mul", :op "Mul", :input ["Const" "Placeholder"], :attr [{:key "T", :value {:type :dt-float}}]}],
- :versions {:producer 21}}
+(def tf-data-types
+  [
+   {
+    :checker-fn float?
+    :val-key :float-val
+    :tf-enum-types #{"DT_FLOAT" "DT_DOUBLE" "DT_BFLOAT16"
+                     "DT_FLOAT_REF" "DT_DOUBLE_REF" "DT_BFLOAT16_REF"}
+    }
+   {
+    :checker-fn integer?
+    :val-key :int-val
+    :tf-enum-types #{"DT_INT32" "DT_UINT8" "DT_INT16" "DT_INT8" "DT_INT64" "DT_QINT8" "DT_QUINT8" "DT_QINT32" "DT_QINT16" "DT_QUINT16" "DT_UINT16"
+                     "DT_INT32_REF" "DT_UINT8_REF" "DT_INT16_REF" "DT_INT8_REF" "DT_INT64_REF" "DT_QINT8_REF" "DT_QUINT8_REF"
+                     "DT_QINT32_REF" "DT_QINT16_REF" "DT_QUINT16_REF" "DT_UINT16_REF"}
+    }
+   {
+    :checker-fn (fn [x] (or (= x true) (= x false)))
+    :val-key :bool-val
+    :tf-enum-types #{"DT_BOOL" "DT_BOOL_REF"}
+    }
+   {
+    :checker-fn string?
+    :val-key :string-val
+    :tf-enum-types #{"DT_STRING_REF"}
+    }
+   ]
+  ;DT_COMPLEX64(8), DT_COMPLEX128(18), DT_HALF(19), DT_RESOURCE(20), DT_COMPLEX64_REF(108), DT_COMPLEX128_REF(118),
+  ;DT_HALF_REF(119), DT_RESOURCE_REF(120), UNRECOGNIZED(-1)
+  )
 
-(exp/exec-graph-sess-fn
-  (fn [graph session]
-    ;(.importGraphDef graph (util/slurp-binary "misc/addconst.pb"))
-    ;(.importGraphDef graph (proto/protobuf-dump addconst-graph))
-    (.importGraphDef graph (graph-to-bytes (build-tf-graph example-graph)))
-    (exp/run-graph-thing session  {:in1 (float 3.0) :in2 (float 3.0)} :mul)))
+(defn lookup-by-dtype [dtype]
+  (let [matches (filter #(contains? (:tf-enum-types %) dtype) tf-data-types)]
+    (first matches)))
+
+;(def example-graph
+;  {
+;   :inputs [:in1 :in2]
+;   :outputs [:mul]
+;   :mappings [
+;              [[:in1 :in2] :add1]
+;              [[:in1 :in2] :add2]
+;              [[:add1 :add2] :mul]
+;              ]
+;   :node-defs {
+;               :in1 { :op :placeholder :dtype :float }
+;               :in2 { :op :placeholder :dtype :float }
+;               :mul { :op :mul }
+;               :add1 { :op :mul }
+;               :add2 { :op :add }
+;               }
+;   })
+;(proto-much/build-tf-graph example-graph)
+
+;(exp/exec-graph-sess-fn
+;  (fn [graph session]
+;    ;(.importGraphDef graph (util/slurp-binary "misc/addconst.pb"))
+;    ;(.importGraphDef graph (proto/protobuf-dump addconst-graph))
+;    (.importGraphDef graph (proto-much/graph-to-bytes (proto-much/build-tf-graph example-graph)))
+;    (exp/run-graph-thing session  {:in1 (float 3.0) :in2 (float 3.0)} :mul)))
