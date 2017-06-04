@@ -3,144 +3,30 @@
            [tensorflow-clj.experimental :as exp]
            [flatland.protobuf.core :as proto]
            [tensorflow-clj.util :as util]
+           [tensorflow-clj.graph.node_defs :refer :all]
+           [tensorflow-clj.graph.transform :refer :all]
            [clojure.string :as str]))
 
-;;Control dependencies start with a caret, apparently
-(defn is-control-dep-name [name]
-  (str/starts-with? name "^"))
+(defn build-meta-attr-variable [trainable? variable assign identity]
+  {:variable variable
+   :assign assign
+   :identity identity
+   :trainable? trainable?})
 
-(defn drop-caret [name]
-  (subs name 1))
+(defn find-node-ref [op nodes input-node-name]
+  (let [var-nodes (filter #(= op (:op %)) nodes)
+        filtered-nodes (filter #(contains? (into #{} (:inputs %)) input-node-name) var-nodes)]
+    (first filtered-nodes)))
 
-(defn add-caret [name]
-  (str "^" name))
+(defn build-meta-var-ref [nodes trainable? var-node-name]
+  (let [identity-node (find-node-ref "Identity" nodes var-node-name)
+        assign-node (find-node-ref "Assign" nodes var-node-name)]
+    (build-meta-attr-variable trainable? var-node-name (:name assign-node) (:name identity-node))))
 
-(defn assoc-not-empty [m k v]
-  (if (and v (-> v empty? not))
-    (assoc m k v)
-    m))
-
-(defn assoc-in-not-empty [m ks v]
-  (if (and v (-> v empty? not))
-    (assoc-in m ks v)
-    m))
-
-;;Transforme node defs from Tensorflow into something suitable for us to play with (and back again) and don't
-;;pretend to know everything about the structure / content of the map
-(defn tensorflow-node->clj-node [node]
-  (let [inputs (filter (complement is-control-dep-name) (:input node))
-        control-deps (mapv drop-caret (filter is-control-dep-name (:input node)))
-        converted-attrs (into {} (mapv #(vec [(:key %) (:value %)]) (:attr node)))]
-    (-> node
-        (dissoc :input)
-        (assoc :attr converted-attrs)
-        (assoc-not-empty :inputs inputs)
-        (assoc-not-empty :control-deps control-deps))))
-
-(defn clj-node->tensorflow-node [node]
-  (let [input (concat (:inputs node) (mapv add-caret (:control-deps node)))
-        converted-attrs (into [] (mapv (fn [[k v]] (apply hash-map [:key (name k) :value v])) (:attr node)))]
-    (-> node
-        (dissoc :inputs :control-deps)
-        (assoc :attr converted-attrs)
-        (assoc-not-empty :input input))))
-
-(defn build-node-name [op & {:keys [name prefix]}]
-  (if name
-    (let [base-name (or name op)
-          fullname (if prefix
-                     (str/join "/" [prefix base-name])
-                     base-name)]
-      fullname)
-    (proto-much/gen-name op false)))
-
-(defn build-node [op & {:keys [name inputs control-deps attr]}]
-  (let [node {:op op
-             :name (or name (build-node-name op))
-             :inputs inputs
-             :control-deps control-deps
-             :attr (apply merge attr)}]
-    (into {} (filter second node))))
-
-(defn build-attr [k v]
-  ;{:key k :value v}
-  {k v})
-(defn build-dims [dims]
-  (mapv #(assoc {} :size %) dims))
-(defn build-attr-value [value value-dtype dims]
-  (let [attr (build-attr :value {
-                                  :tensor {
-                                           :dtype value-dtype
-                                           :tensor_shape {}
-                                           }
-                                  })
-        val-key (-> value-dtype proto-much/lookup-by-dtype :val-key)]
-    (-> attr
-      (assoc-in-not-empty [:value :tensor :tensor_shape :dim] (build-dims dims))
-        (assoc-in [:value :tensor val-key] [value]))))
-(defn build-attr-dtype [dtype]
-  (build-attr :dtype { :type dtype }))
-(defn build-attr-n [val]
-  (build-attr :N { :i val }))
-(defn build-attr-t [dtype]
-  (build-attr :T { :type dtype }))
-(defn build-attr-tidx [dtype]
-  (build-attr :Tidx { :type dtype }))
-(defn build-attr-tshape [dtype]
-  (build-attr :Tshape { :type dtype }))
-(defn build-attr-out-type [dtype]
-  (build-attr :out_type { :type dtype }))
-(defn build-attr-axis [val]
-  (build-attr :axis { :i val }))
-(defn build-attr-index [dtype]
-  (build-attr :Index { :type dtype }))
-(defn build-attr-shape [dims]
-  (build-attr :shape {:shape {
-                              :dim (build-dims dims)
-                              }}))
-
-(defn build-node-placeholder [dtype & {:keys [name prefix]}]
-  (let [op "Placeholder"
-        attr-dtype (build-attr-dtype dtype)
-        ;;todo attr-shape?!?!?!
-        fullname (build-node-name op :name name :prefix prefix)]
-    (build-node op :name fullname :attr [attr-dtype])))
-
-(defn build-node-const [value value-dtype dims & {:keys [name prefix]}]
-  (let [op "Const"
-        attr-dtype (build-attr-dtype value-dtype)
-        attr-value (build-attr-value value value-dtype dims)
-        fullname (build-node-name op :name name :prefix prefix)
-        base (build-node op :name fullname :attr [attr-dtype attr-value])]
-    base))
-
-(defn build-node-variable [dims value-dtype & {:keys [name prefix]}]
-  (let [op "VariableV2"
-        fullname (build-node-name op :name name :prefix prefix)
-        attr-dtype (build-attr-dtype value-dtype)
-        attr-shape (build-attr-shape dims)
-        base (build-node op :name fullname :attr [attr-dtype attr-shape])]
-    base))
-
-(defn find-dtype [attr]
-  (or (-> attr :T :type)
-      (-> attr :dtype :type)
-      (-> attr :value :tensor :dtype)))
-
-(defn build-node-assign [variable value]
-  (let [op "Assign"
-        fullname (str/join "/" [(-> variable :name) "Assign"])
-        inputs (mapv :name [variable value])
-        attr-t (build-attr-t (-> variable :attr find-dtype))
-        base (build-node op :name fullname :inputs inputs :attr [attr-t])]
-    base))
-
-(defn build-node-identity [target]
-  (let [op "Identity"
-        fullname (str/join "/" [(-> target :name) "read"])
-        attr-t (-> target :attr find-dtype build-attr-t)
-        inputs [(-> target :name)]]
-    (build-node op :name fullname :inputs inputs :attr [attr-t])))
+(defn find-variable-nodes [nodes]
+  (let [var-nodes (filter #(= "VariableV2" (:op %)) nodes)
+        var-refs (map #(build-meta-var-ref nodes true (:name %)) var-nodes)]
+    var-refs))
 
 (defn def-tensor-nodes [name value dtype dims]
   (let [target (build-node-variable dims dtype :name name)
@@ -148,81 +34,6 @@
         assign (build-node-assign target value-node)
         identity (build-node-identity target)]
     [target value-node assign identity]))
-
-(defn build-node-matmul [x y]
-  (let [op "MatMul"
-        inputs (mapv :name [x y])
-        attr-t (-> x :attr find-dtype build-attr-t)]
-    (build-node op :inputs inputs :attr [attr-t])))
-
-(defn build-node-add [x y]
-  (let [op "Add"
-        inputs (mapv :name [x y])
-        attr-t (-> x :attr find-dtype build-attr-t)]
-    (build-node op :inputs inputs :attr [attr-t])))
-
-(defn build-node-sub [x y]
-  (let [op "Sub"
-        inputs (mapv :name [x y])
-        attr-t (-> x :attr find-dtype build-attr-t)]
-    (build-node op :inputs inputs :attr [attr-t])))
-
-(defn build-node-slice [input-node begin-node size-node]
-  (let [op "Slice"
-        inputs (mapv :name [input-node begin-node size-node])
-        attr-index (build-attr-index "DT_INT32")
-        attr-t (build-attr-t "DT_INT32")]
-    (build-node op :inputs inputs :attr [attr-index attr-t])))
-
-(defn build-node-concat-v2 [value-nodes axis-node]
-  (let [op "ConcatV2"
-        inputs (mapv :name (concat value-nodes [axis-node]))
-        attr-n (build-attr-n (count value-nodes))
-        attr-t (build-attr-t "DT_INT32")
-        attr-tidx (build-attr-tidx "DT_INT32")]
-    (build-node op :inputs inputs :attr [attr-n attr-t attr-tidx])))
-
-(defn build-node-reshape [tensor-node shape-node]
-  (let [op "Reshape"
-        inputs (mapv :name [tensor-node shape-node])
-        attr-t (-> tensor-node :attr find-dtype build-attr-t)
-        attr-tshape (build-attr-tshape "DT_INT32")]
-    (build-node op :inputs inputs :attr [attr-t attr-tshape])))
-
-(defn build-node-shape [input-node]
-  (let [op "Shape"
-        inputs (mapv :name [input-node])
-        attr-t (-> input-node :attr find-dtype build-attr-t)
-        attr-out-type (build-attr-out-type "DT_INT32")]
-    (build-node op :inputs inputs :attr [attr-t attr-out-type])))
-
-(defn build-node-pack [input-nodes]
-  (let [op "Pack"
-        inputs (mapv :name input-nodes)
-        attr-n (build-attr-n (count input-nodes))
-        attr-t (build-attr-t "DT_INT32")
-        attr-axis (build-attr-axis 0)]
-    (build-node op :inputs inputs :attr [attr-n attr-t attr-axis])))
-
-(defn build-node-softmax-cross-entropy-with-logits [labels-node logits-node]
-  (let [op "SoftmaxCrossEntropyWithLogits"
-        inputs (mapv :name [labels-node logits-node])
-        attr-t (-> labels-node :attr find-dtype build-attr-t)]
-    (build-node op :inputs inputs :attr [attr-t])))
-
-(defn build-node-reduce-mean [input-node reduction-indices-node]
-  (let [op "Mean"
-        inputs (mapv :name [input-node reduction-indices-node])
-        attr-t (-> input-node :attr find-dtype build-attr-t)
-        ;;todo build keep_dims attr?
-        attr-tidx (build-attr-tidx "DT_INT32")]
-    (build-node op :inputs inputs :attr [attr-t attr-tidx])))
-
-(defn build-node-apply-gradient-descent [input-node alpha-node delta-node]
-  (let [op "ApplyGradientDescent"
-        inputs (mapv :name [input-node alpha-node delta-node])
-        attr-t (-> input-node :attr find-dtype build-attr-t)]
-    (build-node op :inputs inputs :attr [attr-t])))
 
 (defn build-nodes-y-mx-b []
   (let [x-nodes (def-tensor-nodes "x" 0.0 "DT_FLOAT" [10 784])
@@ -314,7 +125,7 @@
         (assoc-not-empty :name name)
         (assoc-not-empty :output output))))
 
-(defn parse-trainable-var [entry]
+(defn parse-variable [trainable? entry]
   (let [split-entry (-> entry
                         proto-much/byte-string-to-string
                         (str/replace "\n" "")
@@ -323,7 +134,8 @@
         [var assign identity] (map parse-node-ref (remove empty? split-entry))]
     {:variable var
      :assign assign
-     :identity identity}))
+     :identity identity
+     :trainable? trainable?}))
 
 (defn parse-trainable-vars [graph]
   (->> graph
@@ -333,7 +145,7 @@
        :value
        :bytes-list
        :value
-       (map parse-trainable-var)))
+       (map (partial parse-variable true))))
 
 (parse-trainable-vars mnist-meta-graph)
 

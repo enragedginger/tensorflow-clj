@@ -61,67 +61,7 @@
     (proto/protobuf-dump proto-graph)))
 
 (defn byte-string-to-string [^com.google.protobuf.ByteString$LiteralByteString byte-string-literal]
-  ;(-> byte-string-literal .toByteArray String.)
-  (-> byte-string-literal .toStringUtf8)
-  )
-
-(defn byte-string-to-string [^com.google.protobuf.ByteString$LiteralByteString byte-string-literal]
-  ;(-> byte-string-literal .toByteArray String.)
-  (-> byte-string-literal .toStringUtf8)
-  )
-
-(def tf-data-types
-  [
-   {
-    :checker-fn float?
-    :val-key :float-val
-    :tf-enum-types #{"DT_FLOAT" "DT_DOUBLE" "DT_BFLOAT16"
-                     "DT_FLOAT_REF" "DT_DOUBLE_REF" "DT_BFLOAT16_REF"}
-    }
-   {
-    :checker-fn integer?
-    :val-key :int-val
-    :tf-enum-types #{"DT_INT32" "DT_UINT8" "DT_INT16" "DT_INT8" "DT_INT64" "DT_QINT8" "DT_QUINT8" "DT_QINT32" "DT_QINT16" "DT_QUINT16" "DT_UINT16"
-                     "DT_INT32_REF" "DT_UINT8_REF" "DT_INT16_REF" "DT_INT8_REF" "DT_INT64_REF" "DT_QINT8_REF" "DT_QUINT8_REF"
-                     "DT_QINT32_REF" "DT_QINT16_REF" "DT_QUINT16_REF" "DT_UINT16_REF"}
-    }
-   {
-    :checker-fn (fn [x] (or (= x true) (= x false)))
-    :val-key :bool-val
-    :tf-enum-types #{"DT_BOOL" "DT_BOOL_REF"}
-    }
-   {
-    :checker-fn string?
-    :val-key :string-val
-    :tf-enum-types #{"DT_STRING_REF"}
-    }
-   ]
-  ;DT_COMPLEX64(8), DT_COMPLEX128(18), DT_HALF(19), DT_RESOURCE(20), DT_COMPLEX64_REF(108), DT_COMPLEX128_REF(118),
-  ;DT_HALF_REF(119), DT_RESOURCE_REF(120), UNRECOGNIZED(-1)
-  )
-
-(defn lookup-by-dtype [dtype]
-  (let [matches (filter #(contains? (:tf-enum-types %) dtype) tf-data-types)]
-    (first matches)))
-
-;(def example-graph
-;  {
-;   :inputs [:in1 :in2]
-;   :outputs [:mul]
-;   :mappings [
-;              [[:in1 :in2] :add1]
-;              [[:in1 :in2] :add2]
-;              [[:add1 :add2] :mul]
-;              ]
-;   :node-defs {
-;               :in1 { :op :placeholder :dtype :float }
-;               :in2 { :op :placeholder :dtype :float }
-;               :mul { :op :mul }
-;               :add1 { :op :mul }
-;               :add2 { :op :add }
-;               }
-;   })
-;(proto-much/build-tf-graph example-graph)
+  (-> byte-string-literal .toStringUtf8))
 
 ;(exp/exec-graph-sess-fn
 ;  (fn [graph session]

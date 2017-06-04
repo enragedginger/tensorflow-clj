@@ -14,3 +14,13 @@
   [precision d]
   (let [factor (Math/pow 10 precision)]
     (/ (Math/round (* d factor)) factor)))
+
+(defn assoc-not-empty [m k v]
+  (if (and v (-> v empty? not))
+    (assoc m k v)
+    m))
+
+(defn assoc-in-not-empty [m ks v]
+  (if (and v (-> v empty? not))
+    (assoc-in m ks v)
+    m))
