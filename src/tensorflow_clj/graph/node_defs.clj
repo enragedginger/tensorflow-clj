@@ -1,7 +1,12 @@
 (ns tensorflow-clj.graph.node_defs
-  (require [tensorflow-clj.proto-much :as proto-much]
-           [clojure.string :as str]
-           [tensorflow-clj.graph.attributes :refer :all]))
+  (require [clojure.string :as str]
+           [tensorflow-clj.graph.attributes :refer :all]
+           [random-string.core :as randy-str]))
+
+(defn gen-name [prefix preserve?]
+  (if preserve?
+    prefix
+    (str prefix "_" (randy-str/string 16))))
 
 (defn build-node-name [op & {:keys [name prefix]}]
   (if name
@@ -10,7 +15,7 @@
                      (str/join "/" [prefix base-name])
                      base-name)]
       fullname)
-    (proto-much/gen-name op false)))
+    (gen-name op false)))
 
 (defn build-node [op & {:keys [name inputs control-deps attr meta-attr]}]
   (let [node {:op op
