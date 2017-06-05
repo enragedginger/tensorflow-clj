@@ -1,4 +1,4 @@
-(ns tensorflow-clj.proto-much
+(ns tensorflow-clj.graph.proto-much
   (:require [flatland.protobuf.core :as proto]
             [tensorflow-clj.util :as util]
             [random-string.core :as randy-str])

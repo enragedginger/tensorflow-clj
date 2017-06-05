@@ -10,7 +10,8 @@
                  [org.clojars.ghaskins/protobuf "3.0.2-2"]
                  [com.google.protobuf/protobuf-java "3.2.0"]
                  [random-string "0.1.0"]
-                 [camel-snake-kebab "0.4.0"]]
+                 [camel-snake-kebab "0.4.0"]
+                 [ubergraph "0.3.1"]]
   :signing {:gpg-key "enragedginger@gmail.com"}
   :main ^:skip-aot tensorflow-clj.core
   :target-path "target/%s"

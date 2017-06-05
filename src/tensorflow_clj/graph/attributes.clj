@@ -47,6 +47,7 @@
   ;{:key k :value v}
   {k v})
 
+;;todo should value be "values"? do we need to add support for that?
 (defn build-attr-value [value value-dtype dims]
   (let [attr (build-attr :value {
                                  :tensor {
@@ -57,6 +58,7 @@
         val-key (-> value-dtype lookup-by-dtype :val-key)]
     (-> attr
         (assoc-in-not-empty [:value :tensor :tensor_shape :dim] (build-dims dims))
+        ;;todo add support for nil values?
         (assoc-in [:value :tensor val-key] [value]))))
 
 (defn build-attr-dtype [dtype]

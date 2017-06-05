@@ -133,6 +133,12 @@
         attr-tidx (build-attr-tidx "DT_INT32")]
     (build-node op :inputs inputs :attr [attr-t attr-tidx])))
 
+(defn build-node-fill [dims-node value-node]
+  (let [op "Fill"
+        inputs (mapv :name [dims-node value-node])
+        attr-t (-> value-node :attr find-dtype build-attr-t)]
+    (build-node op :inputs inputs :attr [attr-t])))
+
 (defn build-node-apply-gradient-descent [input-node alpha-node delta-node]
   (let [op "ApplyGradientDescent"
         inputs (mapv :name [input-node alpha-node delta-node])
