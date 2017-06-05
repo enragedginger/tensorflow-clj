@@ -7,6 +7,12 @@
            [tensorflow-clj.graph.transform :refer :all]
            [tensorflow-clj.util :refer [assoc-not-empty assoc-in-not-empty]]
            [clojure.string :as str]))
+;TODO this is a playground namespace for now
+;pieces will be hacked on here in isolation and then moved out to other namespaces
+;where they can be re-used once they are considered semi-stable
+;much of this code is commented out as I'm just running it once here or there
+;during development. anything that I think *might* be useful will be thrown into a function
+;any functions that prove to have some utility will be grouped and moved to their own ns
 
 (defn def-tensor-nodes [name value dtype dims]
   (let [target (build-node-variable dims dtype :name name)
@@ -61,18 +67,6 @@
         reduce-mean-node (build-node-reduce-mean input-node reduction-indices-node)]
     [reduction-indices-node reduce-mean-node]))
 
-(let [y-mx-b-nodes (build-nodes-y-mx-b)
-      placeholder-node (build-node-placeholder "DT_FLOAT" :name "y_hat")
-      softmax-nodes (build-nodes-softmax-cross-entropy-with-logits (last y-mx-b-nodes) placeholder-node)
-      reduce-mean-nodes (build-nodes-reduce-mean (last softmax-nodes))
-      nodes (concat y-mx-b-nodes softmax-nodes reduce-mean-nodes)
-      tf-nodes (map clj-node->tensorflow-node nodes)
-      graph {:node tf-nodes
-             :versions {:producer 21}}]
-  ;(proto/protobuf-load proto-much/proto-graph-def
-  ;                     (proto/protobuf-dump proto-much/proto-graph-def graph))
-  graph)
-
 ;;todo build these for reals
 (defn build-loop [loop-node times])
 (defn build-train-next-batch [])
@@ -81,21 +75,17 @@
 (defn build-cast [node dtype])
 (defn build-ApplyGradientDescent [variable learning-rate gradient-control])
 
-(def linreg-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/linreg.pb")))
-(-> linreg-graph :node count)
-(mapv :name (-> linreg-graph :node))
-(filter #(= "Identity" (:op %)) (-> linreg-graph :node))
-(map #(str (:name %) " " (:op %) " " (:input %)) (-> linreg-graph :node))
-
-(def addconst-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/addconst.pb")))
-(-> addconst-graph :node count)
-
-(def nonsense-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/nonsense.pb")))
-
-(def mnist-simple-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/mnist_simple.pbtxt")))
-(def mnist-meta-graph (proto/protobuf-load proto-much/proto-meta-graph-def (util/slurp-binary "misc/mnist_simple.model.meta")))
-
-(-> mnist-meta-graph keys)
+;(def linreg-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/linreg.pb")))
+;(-> linreg-graph :node count)
+;(mapv :name (-> linreg-graph :node))
+;(filter #(= "Identity" (:op %)) (-> linreg-graph :node))
+;(map #(str (:name %) " " (:op %) " " (:input %)) (-> linreg-graph :node))
+;(def addconst-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/addconst.pb")))
+;(-> addconst-graph :node count)
+;(def nonsense-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/nonsense.pb")))
+;(def mnist-simple-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/mnist_simple.pbtxt")))
+;(def mnist-meta-graph (proto/protobuf-load proto-much/proto-meta-graph-def (util/slurp-binary "misc/mnist_simple.model.meta")))
+;(-> mnist-meta-graph keys)
 
 (defn parse-node-ref [node-ref]
   (let [[name output] (str/split node-ref #":")]
@@ -125,77 +115,88 @@
        :value
        (map (partial parse-variable true))))
 
-(parse-trainable-vars mnist-meta-graph)
+;(parse-trainable-vars mnist-meta-graph)
+;(def thing (-> nonsense-graph :node second :attr second :value :tensor :string-val first proto-much/byte-string-to-string))
 
-(def thing (-> nonsense-graph :node second :attr second :value :tensor :string-val first proto-much/byte-string-to-string))
+;(let [y-mx-b-nodes (build-nodes-y-mx-b)
+;      placeholder-node (build-node-placeholder "DT_FLOAT" :name "y_hat")
+;      softmax-nodes (build-nodes-softmax-cross-entropy-with-logits (last y-mx-b-nodes) placeholder-node)
+;      reduce-mean-nodes (build-nodes-reduce-mean (last softmax-nodes))
+;      nodes (concat y-mx-b-nodes softmax-nodes reduce-mean-nodes)
+;      tf-nodes (map clj-node->tensorflow-node nodes)
+;      graph {:node tf-nodes
+;             :versions {:producer 21}}]
+;  (proto/protobuf-load proto-much/proto-graph-def
+;                       (proto/protobuf-dump proto-much/proto-graph-def graph))
+;  graph)
 
-(time
-  (exp/exec-graph-sess-fn
-    (fn [graph session]
-      (let [nodes (build-nodes-y-mx-b)
-            out-node-name (-> nodes last :name)
-            tf-nodes (map clj-node->tensorflow-node nodes)
-            graph-def {:node tf-nodes
-                       :versions {:producer 21}}
-            graph-bytes (proto/protobuf-dump proto-much/proto-graph-def graph-def)]
-        (.importGraphDef graph graph-bytes)
-        (exp/run-graph-thing session {:x [[5.0 12.0]
-                                          [2.5 3.4]]
-                                      :W [[6.0 1.3]
-                                          [0.0 0.0]]
-                                      :b [[0.0]]}
-                             out-node-name)
-        ))))
-
-(time
-  (exp/exec-graph-sess-fn
-    (fn [graph session]
-      (let [y-mx-b-nodes (build-nodes-y-mx-b)
-            out-node-1 (-> y-mx-b-nodes last)
-            placeholder-node (build-node-placeholder "DT_FLOAT" :name "y_hat")
-            softmax-nodes (build-nodes-softmax-cross-entropy-with-logits out-node-1 placeholder-node)
-            out-node-2 (-> softmax-nodes last)
-            nodes (concat y-mx-b-nodes softmax-nodes)
-            tf-nodes (map clj-node->tensorflow-node nodes)
-            graph-def {:node tf-nodes
-                       :versions {:producer 21}}
-            graph-bytes (proto/protobuf-dump proto-much/proto-graph-def graph-def)]
-        (.importGraphDef graph graph-bytes)
-        (exp/run-graph-thing session {:x [[5.0 12.0]
-                                          [2.5 3.4]]
-                                      :W [[6.0 1.3]
-                                          [0.0 0.0]]
-                                      :b [[2.0]]
-                                      :y_hat [[5.3 8.5]
-                                              [900.24 9.94]]}
-                             (-> out-node-1 :name)
-                             (-> out-node-2 :name))
-        ))))
-
-(time
-  (exp/exec-graph-sess-fn
-    (fn [graph session]
-      (let [y-mx-b-nodes (build-nodes-y-mx-b)
-            out-node-1 (-> y-mx-b-nodes last)
-            placeholder-node (build-node-placeholder "DT_FLOAT" :name "y_hat")
-            softmax-nodes (build-nodes-softmax-cross-entropy-with-logits out-node-1 placeholder-node)
-            out-node-2 (-> softmax-nodes last)
-            reduce-mean-nodes (build-nodes-reduce-mean out-node-2)
-            out-node-3 (-> reduce-mean-nodes last)
-            nodes (concat y-mx-b-nodes softmax-nodes reduce-mean-nodes)
-            tf-nodes (map clj-node->tensorflow-node nodes)
-            graph-def {:node tf-nodes
-                       :versions {:producer 21}}
-            graph-bytes (proto/protobuf-dump proto-much/proto-graph-def graph-def)]
-        (.importGraphDef graph graph-bytes)
-        (exp/run-graph-thing session {:x [[5.0 12.0]
-                                          [2.5 3.4]]
-                                      :W [[6.0 1.3]
-                                          [0.0 0.0]]
-                                      :b [[2.0]]
-                                      :y_hat [[5.3 3.5]
-                                              [0.24 3.94]]}
-                             (-> out-node-1 :name)
-                             (-> out-node-2 :name)
-                             (-> out-node-3 :name))
-        ))))
+;(time
+;  (exp/exec-graph-sess-fn
+;    (fn [graph session]
+;      (let [nodes (build-nodes-y-mx-b)
+;            out-node-name (-> nodes last :name)
+;            tf-nodes (map clj-node->tensorflow-node nodes)
+;            graph-def {:node tf-nodes
+;                       :versions {:producer 21}}
+;            graph-bytes (proto/protobuf-dump proto-much/proto-graph-def graph-def)]
+;        (.importGraphDef graph graph-bytes)
+;        (exp/run-graph-thing session {:x [[5.0 12.0]
+;                                          [2.5 3.4]]
+;                                      :W [[6.0 1.3]
+;                                          [0.0 0.0]]
+;                                      :b [[0.0]]}
+;                             out-node-name)
+;        ))))
+;
+;(time
+;  (exp/exec-graph-sess-fn
+;    (fn [graph session]
+;      (let [y-mx-b-nodes (build-nodes-y-mx-b)
+;            out-node-1 (-> y-mx-b-nodes last)
+;            placeholder-node (build-node-placeholder "DT_FLOAT" :name "y_hat")
+;            softmax-nodes (build-nodes-softmax-cross-entropy-with-logits out-node-1 placeholder-node)
+;            out-node-2 (-> softmax-nodes last)
+;            nodes (concat y-mx-b-nodes softmax-nodes)
+;            tf-nodes (map clj-node->tensorflow-node nodes)
+;            graph-def {:node tf-nodes
+;                       :versions {:producer 21}}
+;            graph-bytes (proto/protobuf-dump proto-much/proto-graph-def graph-def)]
+;        (.importGraphDef graph graph-bytes)
+;        (exp/run-graph-thing session {:x [[5.0 12.0]
+;                                          [2.5 3.4]]
+;                                      :W [[6.0 1.3]
+;                                          [0.0 0.0]]
+;                                      :b [[2.0]]
+;                                      :y_hat [[5.3 8.5]
+;                                              [900.24 9.94]]}
+;                             (-> out-node-1 :name)
+;                             (-> out-node-2 :name))
+;        ))))
+;
+;(time
+;  (exp/exec-graph-sess-fn
+;    (fn [graph session]
+;      (let [y-mx-b-nodes (build-nodes-y-mx-b)
+;            out-node-1 (-> y-mx-b-nodes last)
+;            placeholder-node (build-node-placeholder "DT_FLOAT" :name "y_hat")
+;            softmax-nodes (build-nodes-softmax-cross-entropy-with-logits out-node-1 placeholder-node)
+;            out-node-2 (-> softmax-nodes last)
+;            reduce-mean-nodes (build-nodes-reduce-mean out-node-2)
+;            out-node-3 (-> reduce-mean-nodes last)
+;            nodes (concat y-mx-b-nodes softmax-nodes reduce-mean-nodes)
+;            tf-nodes (map clj-node->tensorflow-node nodes)
+;            graph-def {:node tf-nodes
+;                       :versions {:producer 21}}
+;            graph-bytes (proto/protobuf-dump proto-much/proto-graph-def graph-def)]
+;        (.importGraphDef graph graph-bytes)
+;        (exp/run-graph-thing session {:x [[5.0 12.0]
+;                                          [2.5 3.4]]
+;                                      :W [[6.0 1.3]
+;                                          [0.0 0.0]]
+;                                      :b [[2.0]]
+;                                      :y_hat [[5.3 3.5]
+;                                              [0.24 3.94]]}
+;                             (-> out-node-1 :name)
+;                             (-> out-node-2 :name)
+;                             (-> out-node-3 :name))
+;        ))))
