@@ -21,15 +21,10 @@ def gen(name):
     with g.as_default():
         yield
     #tf.train.export_meta_graph(graph_def=g.as_graph_def(), filename=name, as_text=True)
-    #tf.train.write_graph(g, '.', name, as_text=True)
-    #with open(name, "wb") as out:
-    #    g = tf.Graph()
-    #    with g.as_default():
-    #        yield
-    #    out.write(g.as_graph_def().SerializeToString())
+    tf.train.write_graph(g, '.', name, as_text=True)
 
 def main(_):
-  with gen("mnist_simple"):
+  with gen("mnist/mnist_simple"):
       # Import data
       mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
 
@@ -67,7 +62,7 @@ def main(_):
       accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
       print(sess.run(accuracy, feed_dict={x: mnist.test.images,
                                           y_: mnist.test.labels}))
-      tf.train.Saver().save(sess, 'mnist_simple.model')
+      tf.train.Saver().save(sess, 'mnist/mnist_simple')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

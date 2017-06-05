@@ -1,0 +1,2 @@
+model_checkpoint_path: "mnist_simple"
+all_model_checkpoint_paths: "mnist_simple"

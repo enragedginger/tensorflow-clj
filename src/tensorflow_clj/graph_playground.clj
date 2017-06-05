@@ -82,9 +82,8 @@
 ;(map #(str (:name %) " " (:op %) " " (:input %)) (-> linreg-graph :node))
 ;(def addconst-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/addconst.pb")))
 ;(-> addconst-graph :node count)
-;(def nonsense-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/nonsense.pb")))
-;(def mnist-simple-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/mnist_simple.pbtxt")))
-;(def mnist-meta-graph (proto/protobuf-load proto-much/proto-meta-graph-def (util/slurp-binary "misc/mnist_simple.model.meta")))
+;(def mnist-simple-graph (proto/protobuf-load proto-much/proto-graph-def (util/slurp-binary "misc/mnist/mnist_simple.pbtxt")))
+;(def mnist-meta-graph (proto/protobuf-load proto-much/proto-meta-graph-def (util/slurp-binary "misc/mnist/mnist_simple.model.meta")))
 ;(-> mnist-meta-graph keys)
 
 (defn parse-node-ref [node-ref]

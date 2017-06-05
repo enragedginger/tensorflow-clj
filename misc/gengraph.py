@@ -47,11 +47,3 @@ with gen("linreg"):
     fixb = tf.assign(b, [1.], name="fixb")
 
     init = tf.variables_initializer(tf.global_variables(), name="init")
-
-with gen("nonsense"):
-    a = tf.constant(5.0)
-    b = tf.constant('omg we is in the cloud ?!?!?!oneoneone')
-    c = tf.constant(True)
-    d = tf.constant([[1.2, 2.], [3.4, 3.5]])
-    e = tf.constant(5)
-
