@@ -2,15 +2,28 @@
 
 [![Build Status](https://travis-ci.org/enragedginger/tensorflow-clj.svg?branch=master)](https://travis-ci.org/enragedginger/tensorflow-clj)
 
-Clojure API for using Google's TensorFlow.
+This project is under active development. Expect the APIs to change frequently for the next several months.
 
-We just got started. The API will change constantly.
+## Summary
+Clojure API for building and running computations on Google's TensorFlow framework.
 
-Development is coordinated on **#tensorflow** @ Clojurians Slack, [get an invite](http://clojurians.net/)
+## Rationale (because it wouldn't be a Clojure library without this section)
+TODO
+
+## Goals
+TODO
+
+## How to Get Involved
+* You can find and chat with us on **#tensorflow** @ Clojurians Slack. [Get an invite here.](http://clojurians.net/)
+* If you find bugs / have feature requests, feel free to make an issue here on GitHub. For bugs, please provide sample
+code where possible for reproducing the issue. Also, be sure to let us know what environment (OS, Java version, CLJ version,
+etc.) you're using.
 
 ## Usage
 
-Should run out-of-the-box using Leiningen. Developed locally on macOS and also built on Travis CI Linux.
+This library is available via Clojars: `[tensorflow-clj "0.1"]`
+
+This project should run out-of-the-box using Leiningen. It's developed locally on MacOS and also built on Travis CI Linux.
 
 Run some basic tests:
 
